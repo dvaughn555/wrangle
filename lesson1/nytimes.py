@@ -36,10 +36,23 @@ def get_from_file(kind, period):
 
 def article_overview(kind, period):
     data = get_from_file(kind, period)
-    titles = []
     urls = []
-    # YOUR CODE HERE
-
+    titles = []
+    for asset_id in data:
+        try:
+            # Add article section:title as a dictionary to the list of the titles.
+            titles.append({asset_id["section"]: asset_id["title"]})
+            # Json python objects are nested dictionaries.
+            # Each article entry has 0+ media record entries.
+            for media_record in asset_id["media"]:
+                # Each media record has 0+ metadata entries for the media record
+                for meta_data_record in media_record["media-metadata"]:
+                    # If the format is what we are looking for (Standard Thumbnail)..
+                    if meta_data_record["format"] == "Standard Thumbnail":
+                        # We grab the url for that format that passed the check.
+                        urls.append(meta_data_record["url"])
+        except IndexError as err:
+            print "ERROR:", err
     return titles, urls
 
 
