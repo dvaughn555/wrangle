@@ -4,32 +4,44 @@
 # and write the result out in a csv file, using pipe character | as the delimiter.
 # An example output can be seen in the "example.csv" file.
 
-import xlrd
-import os
 import csv
 from zipfile import ZipFile
+
+import xlrd
 
 datafile = "2013_ERCOT_Hourly_Load_Data.xls"
 outfile = "2013_Max_Loads.csv"
 
 
-def open_zip(datafile):
-    with ZipFile('{0}.zip'.format(datafile), 'r') as myzip:
+def open_zip(data_file):
+    with ZipFile('{0}.zip'.format(data_file), 'r') as myzip:
         myzip.extractall()
 
 
-def parse_file(datafile):
-    workbook = xlrd.open_workbook(datafile)
+def parse_file(data_file):
+    workbook = xlrd.open_workbook(data_file)
     sheet = workbook.sheet_by_index(0)
-    data = None
-    # YOUR CODE HERE
-    # Remember that you can use xlrd.xldate_as_tuple(sometime, 0) to convert
-    # Excel date to Python tuple of (year, month, day, hour, minute, second)
-    return data
+    headers = sheet.row_values(0, start_colx=0, end_colx=None)
+    ans = []
+    for col in range(1, sheet.ncols - 1):
+        col_vals = sheet.col_values(col, start_rowx=1, end_rowx=None)
+        max_val = max(col_vals)
+        max_index = col_vals.index(max_val)
+        max_date = xlrd.xldate_as_tuple(sheet.cell_value(max_index + 1, 0), 0)
+        ans.append({'Station': headers[col], 'Max Load': max_val, 'Year': max_date[0],
+                    'Month': max_date[1], 'Day': max_date[2], 'Hour': max_date[3]})
+
+    return ans
+
 
 def save_file(data, filename):
-    pass
-    # YOUR CODE HERE
+    # Station|Year|Month|Day|Hour|Max Load
+    fields = ["Station", "Year", "Month", "Day", "Hour", "Max Load"]
+    with open(filename, 'wb') as the_file:
+        writer = csv.DictWriter(the_file, delimiter='|', fieldnames=fields)
+        writer.writeheader()
+        for row in data:
+            writer.writerow(row)
 
 
 def test():
@@ -60,10 +72,12 @@ def test():
                         max_answer = round(float(ans[station][field]), 1)
                         max_line = round(float(line[field]), 1)
                         assert max_answer == max_line
+                        print 1
 
                     # Otherwise check for equality
                     else:
                         assert ans[station][field] == line[field]
+                        print 2
 
             number_of_rows += 1
             stations.append(station)
@@ -73,6 +87,7 @@ def test():
 
         # Check Station Names
         assert set(stations) == set(correct_stations)
+        print "done"
 
 
 if __name__ == "__main__":
